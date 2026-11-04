@@ -1,0 +1,50 @@
+[project]
+name = "auth-service"
+version = "1.0.0"
+description = ""
+authors = []
+requires-python = ">=3.14,<4.0"
+
+dependencies = [
+    # Web framework
+    "fastapi==0.156.3",
+    "uvicorn[standard]==0.54.0",
+
+    # Production ASGI server
+    "gunicorn==26.2.0",
+    "uvicorn-worker==0.4.0",
+
+    # PostgreSQL и миграции
+    "SQLAlchemy[asyncio]==2.1.5",
+    "alembic==1.20.0",
+    "asyncpg==0.32.0",
+
+    # Redis
+    "redis==8.1.0",
+
+    # Конфигурация и валидация
+    "pydantic==2.14.1",
+    "pydantic-settings==2.16.1",
+
+    # Авторизация и безопасность
+    "PyJWT[crypto]==2.15.1",
+    "pwdlib[argon2]==0.3.1",
+
+    # CLI
+    "typer==0.27.3",
+
+    # Повторные попытки операций
+    "backoff==2.2.1",
+]
+
+[dependency-groups]
+dev = [
+    "ruff==0.17.1",
+]
+
+[tool.poetry]
+package-mode = false
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

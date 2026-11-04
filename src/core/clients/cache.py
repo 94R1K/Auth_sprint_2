@@ -1,0 +1,31 @@
+from abc import ABC, abstractmethod
+
+
+class CacheClientABC(ABC):
+    @abstractmethod
+    async def get(self, key: str) -> str | None:
+        """Получить значение по ключу."""
+    
+    @abstractmethod
+    async def get_keys_by_prefix(self, prefix: str) -> list[str]:
+        """Получить все ключи, начинающиеся с префикса."""
+
+    @abstractmethod
+    async def set(self, key: str, value: str, ex: int | None = None, exat: int | None = None) -> None:
+        """Положить значение по ключу."""
+
+    @abstractmethod
+    async def delete(self, key: str) -> None:
+        """Удалить ключ."""
+
+    @abstractmethod
+    async def delete_by_prefix(self, prefix: str) -> None:
+        """Удалить все ключи, начинающиеся с префикса."""
+    
+    @abstractmethod
+    async def increment_counters(
+        self,
+        keys: tuple[str, ...],
+        window: int,
+    ) -> list[tuple[int, int]]:
+        """Атомарно увеличивает счётчики и возвращает их значения и TTL."""

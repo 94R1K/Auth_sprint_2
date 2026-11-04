@@ -1,0 +1,222 @@
+import time
+from typing import TYPE_CHECKING
+from uuid import UUID, uuid4
+
+import jwt
+
+from core.dto import AccessTokenClaims, RefreshTokenClaims, TokenPair
+from core.exceptions import InvalidRefreshTokenError
+
+if TYPE_CHECKING:
+    from core.clients import CacheClientABC
+
+
+class TokenService:
+    JWT_ALGORITHM = "RS256"
+
+    USER_SESSIONS_PREFIX = "auth:user:{user_id}:session:"
+    SESSION_KEY = "auth:user:{user_id}:session:{session_id}"
+
+    def __init__(
+        self,
+        *,
+        cache_client: CacheClientABC,
+        access_ttl: int,
+        refresh_ttl: int,
+        jwt_private_key: str,
+        jwt_public_key: str,
+    ) -> None:
+        if access_ttl <= 0 or refresh_ttl <= 0:
+            raise ValueError("Token TTL must be positive")
+
+        self._cache_client = cache_client
+        self._access_ttl = access_ttl
+        self._refresh_ttl = refresh_ttl
+        self._jwt_private_key = jwt_private_key
+        self._jwt_public_key = jwt_public_key
+
+    def _session_key(self, user_id: str, session_id: str) -> str:
+        """Сформировать ключ Redis для конкретной сессии пользователя."""
+        return self.SESSION_KEY.format(
+            user_id=user_id,
+            session_id=session_id,
+        )
+
+    def _user_sessions_prefix(self, user_id: str) -> str:
+        """Сформировать префикс Redis-ключей всех сессий пользователя."""
+        return self.USER_SESSIONS_PREFIX.format(user_id=user_id)
+
+    def _encode_token(
+        self,
+        claims: AccessTokenClaims | RefreshTokenClaims,
+    ) -> str:
+        """Подписать claims приватным ключом и получить JWT."""
+        return jwt.encode(
+            claims.model_dump(mode="json"),
+            self._jwt_private_key,
+            algorithm=self.JWT_ALGORITHM,
+        )
+
+    def decode_access_token(self, token: str) -> AccessTokenClaims:
+        """Проверить подпись и срок действия access-токена."""
+        payload = jwt.decode(
+            token,
+            self._jwt_public_key,
+            algorithms=[self.JWT_ALGORITHM],
+        )
+        return AccessTokenClaims.model_validate(payload)
+
+    def decode_refresh_token(self, token: str) -> RefreshTokenClaims:
+        """Проверить подпись и срок действия refresh-токена."""
+        payload = jwt.decode(
+            token,
+            self._jwt_public_key,
+            algorithms=[self.JWT_ALGORITHM],
+        )
+        return RefreshTokenClaims.model_validate(payload)
+
+    async def _create_token_pair(
+        self,
+        user_id: str,
+        session_id: str,
+    ) -> TokenPair:
+        now = int(time.time())
+
+        access_claims = AccessTokenClaims(
+            user_id=user_id,
+            session_id=session_id,
+            jti=str(uuid4()),
+            type="access",
+            exp=now + self._access_ttl,
+        )
+        refresh_claims = RefreshTokenClaims(
+            user_id=user_id,
+            session_id=session_id,
+            jti=str(uuid4()),
+            type="refresh",
+            exp=now + self._refresh_ttl,
+        )
+
+        access_token = self._encode_token(access_claims)
+        refresh_token = self._encode_token(refresh_claims)
+
+        await self.add_refresh_token(refresh_claims)
+
+        return TokenPair(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_type="bearer",
+        )
+
+    async def get_tokens(self, user_id: UUID) -> TokenPair:
+        """Выпустить пару токенов для новой сессии."""
+        return await self._create_token_pair(
+            user_id=str(user_id),
+            session_id=str(uuid4()),
+        )
+
+    async def add_refresh_token(
+        self,
+        claims: RefreshTokenClaims,
+    ) -> None:
+        """Создать или обновить состояние сессии."""
+        key = self._session_key(
+            user_id=claims.user_id,
+            session_id=claims.session_id,
+        )
+
+        await self._cache_client.set(
+            key=key,
+            value=claims.jti,
+            exat=claims.exp,
+        )
+
+    async def is_session_active(
+        self,
+        user_id: str,
+        session_id: str,
+    ) -> bool:
+        """Проверить наличие активной сессии."""
+        result = await self._cache_client.get(
+            key=self._session_key(user_id, session_id),
+        )
+        return result is not None
+
+    async def is_access_token_active(
+        self,
+        claims: AccessTokenClaims,
+    ) -> bool:
+        """Access-токен активен, пока активна его сессия."""
+        return await self.is_session_active(
+            user_id=claims.user_id,
+            session_id=claims.session_id,
+        )
+
+    async def is_refresh_token_active(
+        self,
+        claims: RefreshTokenClaims,
+    ) -> bool:
+        """Проверить, существует ли refresh-токен текущей в сессии."""
+        result = await self._cache_client.get(
+            key=self._session_key(
+                user_id=claims.user_id,
+                session_id=claims.session_id,
+            ),
+        )
+        return result == claims.jti
+
+    async def refresh_tokens(self, claims: RefreshTokenClaims) -> TokenPair:
+        """Обновить пару токенов с ротацией refresh-токена."""
+        error_message = "Недействительный или просроченный токен обновления"
+
+        if claims.type != "refresh":
+            raise InvalidRefreshTokenError(error_message)
+
+        if not await self.is_refresh_token_active(claims):
+            raise InvalidRefreshTokenError(error_message)
+
+        try:
+            user_id = UUID(claims.user_id)
+        except ValueError:
+            raise InvalidRefreshTokenError(error_message) from None
+
+        return await self._create_token_pair(
+            user_id=str(user_id),
+            session_id=claims.session_id,
+        )
+
+    async def revoke_session(
+        self,
+        user_id: str,
+        session_id: str,
+    ) -> None:
+        """Завершить сессию и отозвать связанные с ней токены."""
+        await self._cache_client.delete(
+            key=self._session_key(user_id, session_id),
+        )
+
+    async def revoke_other_sessions(
+        self,
+        user_id: str,
+        current_session_id: str,
+    ) -> None:
+        """Завершить все сессии пользователя, кроме текущей."""
+        prefix = self._user_sessions_prefix(user_id)
+        keys = await self._cache_client.get_keys_by_prefix(
+            prefix=prefix,
+        )
+
+        current_key = self._session_key(
+            user_id=user_id,
+            session_id=current_session_id,
+        )
+
+        for key in keys:
+            if key != current_key:
+                await self._cache_client.delete(key)
+
+    async def revoke_all_user_tokens(self, user_id: str) -> None:
+        """Завершить все сессии пользователя."""
+        await self._cache_client.delete_by_prefix(
+            prefix=self._user_sessions_prefix(user_id),
+        )
