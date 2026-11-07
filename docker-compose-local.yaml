@@ -8,6 +8,9 @@ services:
       - .env
     environment:
       WEB_CONCURRENCY: 2
+      JAEGER_HOST: jaeger
+      JAEGER_PORT: 4317
+      JAEGER_INSECURE: "true"
       JWT_PRIVATE_KEY_PATH: /run/secrets/jwt_private_key
       JWT_PUBLIC_KEY_PATH: /run/secrets/jwt_public_key
     secrets:
@@ -22,6 +25,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      jaeger:
+        condition: service_started
     restart: on-failure
 
   redis:
@@ -54,6 +59,13 @@ services:
       retries: 10
     restart: on-failure
 
+  jaeger:
+    image: cr.jaegertracing.io/jaegertracing/jaeger:2.23.0
+    container_name: jaeger
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
 
 volumes:
   redis_data:

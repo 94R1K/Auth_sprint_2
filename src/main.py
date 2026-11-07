@@ -7,6 +7,8 @@ from fastapi import FastAPI
 from redis.asyncio import Redis
 
 from api.exception_handlers import register_exception_handlers
+from api.middlewares import register_middlewares
+from api.tracer import configure_tracer
 from api.v1.register_routers import register_routers
 from clients import RedisCacheClient
 from core.config import settings
@@ -72,8 +74,16 @@ def create_fastapi_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    register_middlewares(app)
     register_exception_handlers(app)
     register_routers(app)
+    configure_tracer(
+        app,
+        settings.jaeger_host,
+        settings.jaeger_port,
+        settings.jaeger_insecure,
+        engine.sync_engine,
+    )
 
     return app
 
