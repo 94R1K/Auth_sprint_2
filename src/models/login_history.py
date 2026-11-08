@@ -8,6 +8,7 @@ from sqlalchemy import (
     ForeignKey,
     Identity,
     Index,
+    PrimaryKeyConstraint,
     Text,
     func,
 )
@@ -26,12 +27,15 @@ class LoginHistory(Base):
     id: Mapped[int] = mapped_column(
         BigInteger,
         Identity(),
-        primary_key=True,
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=True,
+        ForeignKey(
+            "users.id",
+            ondelete="CASCADE",
+            name="fk_login_history_user_id_users",
+        ),
+        nullable=False,
     )
     login_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -52,6 +56,7 @@ class LoginHistory(Base):
     )
 
     __table_args__ = (
-        Index("ix_login_history_user_id", "user_id"),
+        PrimaryKeyConstraint("user_id", "id", name="pk_login_history_user_id"),
         Index("ix_login_history_login_at", "login_at"),
+        {"postgresql_partition_by": "HASH (user_id)"},
     )
