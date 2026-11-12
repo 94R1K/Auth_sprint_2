@@ -42,6 +42,11 @@ class Settings(BaseSettings):
     redis_port: int = Field(default=6379, ge=1, le=65535)
     redis_db: int = Field(default=0, ge=0)
 
+    # Jaeger
+    jaeger_host: str = Field(min_length=1)
+    jaeger_port: int = Field(default=4317, ge=1, le=65535)
+    jaeger_insecure: bool = True
+
     access_token_ttl: int = Field(default=900, ge=1)
     refresh_token_ttl: int = Field(default=60 * 60 * 24 * 30, ge=1)
 

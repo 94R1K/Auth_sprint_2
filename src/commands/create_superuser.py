@@ -4,6 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import settings
+from core.security.passwords import hash_password
 from models import User
 
 logger = logging.getLogger(__name__)
@@ -15,9 +16,10 @@ class CreateService:
     
     async def create_superuser(self):
         try:
+            password_hash = await hash_password(settings.superuser_password)
             user = User(
                 login=settings.superuser_login,
-                password=settings.superuser_password,
+                password=password_hash,
                 first_name="Admin",
                 last_name="Admin"
             )
