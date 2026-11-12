@@ -1,6 +1,7 @@
+from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class PasswordChange(BaseModel):
@@ -16,12 +17,26 @@ class UserCreate(BaseModel):
     login: str = Field(
         ..., min_length=3, max_length=50, description="Логин пользователя"
     )
-    password: str = Field(
-        ..., min_length=8, max_length=128, description="Пароль пользователя"
+    password: str | None = Field(
+        default=None, min_length=8, max_length=128, description="Пароль пользователя"
     )
     first_name: str = Field(min_length=1, max_length=50, description="Имя")
     last_name: str = Field(min_length=1, max_length=50, description="Фамилия")
+    auth_provider: str = Field(
+        default=None, min_length=3, max_length=256, description=""
+    )
 
+    @model_validator(mode="before")
+    @classmethod
+    def check_auth_fields(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            has_password = data.get("password") is not None
+            has_provider = data.get("auth_provider") is not None
+            if has_password == has_provider:
+                raise ValueError(
+                    "Должно быть передано ровно одно из полей: password или auth_provider"
+                )
+        return data
 
 class UserInDB(BaseModel):
     model_config = ConfigDict(from_attributes=True)

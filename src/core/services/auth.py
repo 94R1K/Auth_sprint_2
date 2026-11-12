@@ -38,3 +38,13 @@ class AuthServiceABC(ABC):
     @abstractmethod
     async def logout_all(self, user_id: str) -> None:
         """Выход со всех устройств (завершение всех сессий)."""
+
+
+class OAuthServiceABC(ABC):
+    @abstractmethod
+    def get_login_url(self):
+        """Получение ссылки для получения кода авторизации"""
+    
+    @abstractmethod
+    def login(self):
+        """Вход в приложение через стороннюю авторизацию"""

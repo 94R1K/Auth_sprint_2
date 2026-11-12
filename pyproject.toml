@@ -35,6 +35,7 @@ dependencies = [
 
     # Повторные попытки операций
     "backoff==2.2.1",
+    "aiohttp (>=3.14.5,<4.0.0)",
 ]
 
 [dependency-groups]
