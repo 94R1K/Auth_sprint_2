@@ -53,6 +53,16 @@ class Settings(BaseSettings):
     superuser_login: str
     superuser_password: str
 
+
+    yandex_secret_key: str | None = None
+    yandex_client_id: str | None = None
+    yandex_code_url: str | None = None
+    yandex_token_url: str | None = None
+    yandex_user_info_url: str | None = None
+    yandex_debug_token: str | None
+
+    token_debug_mode: bool = False
+
     @property
     def jwt_private_key(self) -> str:
         return self.jwt_private_key_path.read_text()

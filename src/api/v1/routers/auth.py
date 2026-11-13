@@ -1,14 +1,15 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request, Response, status
+from fastapi import APIRouter, Depends, Query, Request, Response, status
+from fastapi.responses import JSONResponse
 
 from api.dependencies import get_current_token_claims, get_login_rate_limiter
 from api.exception_handlers import LoginRateLimitExceeded
 from core.dto import AccessTokenClaims, TokenPair
 from core.security import LoginRateLimiter
-from core.services import AuthServiceABC
+from core.services import AuthServiceABC, OAuthServiceABC
 from schemas import TokenRefreshRequest, UserCreate, UserInDB, UserLogin
-from services import get_auth_service
+from services import get_auth_service, get_oauth_service
 
 auth_router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
@@ -66,6 +67,36 @@ async def login_user(
         ip_address=ip_address,
         user_agent=request.headers.get("user-agent"),
     )
+
+
+@auth_router.get(
+    "/{code_provider}/get_code_url",
+)
+async def oauth_get_code_url(
+    oauth_service: Annotated[
+        OAuthServiceABC,
+        Depends(get_oauth_service)
+    ]
+):
+    return JSONResponse(content={"data": oauth_service.get_login_url()})
+
+@auth_router.get(
+    "/{code_provider}/login"
+)
+async def oauth_login(
+    request: Request,
+    code: Annotated[str, Query()],
+    oauth_service: Annotated[
+        OAuthServiceABC,
+        Depends(get_oauth_service)
+    ]
+) -> TokenPair:
+    ip_address = (
+        request.client.host
+        if request.client is not None
+        else "unknown"
+    )
+    return await oauth_service.login(code, ip_address, user_agent=request.headers.get("user-agent"))
 
 
 @auth_router.post(

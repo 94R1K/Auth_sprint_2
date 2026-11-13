@@ -26,9 +26,9 @@ class User(Base):
         unique=True,
         nullable=False,
     )
-    password: Mapped[str] = mapped_column(
+    password: Mapped[str | None] = mapped_column(
         String(255),
-        nullable=False,
+        nullable=True,
     )
     first_name: Mapped[str] = mapped_column(String(50))
     last_name: Mapped[str] = mapped_column(String(50))
@@ -48,6 +48,11 @@ class User(Base):
         default=True,
         server_default="true",
         nullable=False,
+    )
+    auth_provider: Mapped[str] = mapped_column(
+        String(50),
+        nullable=True,
+        default=None
     )
     user_roles: Mapped[list[UserRole]] = relationship(
         back_populates="user",

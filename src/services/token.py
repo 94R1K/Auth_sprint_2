@@ -1,11 +1,15 @@
+import base64
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
+import aiohttp
 import jwt
 
+from core.config import settings
 from core.dto import AccessTokenClaims, RefreshTokenClaims, TokenPair
 from core.exceptions import InvalidRefreshTokenError
+from schemas import UserCreate
 
 if TYPE_CHECKING:
     from core.clients import CacheClientABC
@@ -220,3 +224,45 @@ class TokenService:
         await self._cache_client.delete_by_prefix(
             prefix=self._user_sessions_prefix(user_id),
         )
+
+
+class YandexTokenService:
+    def _get_authorization_headers(self) -> str:
+        credentials = f"{settings.yandex_client_id}:{settings.yandex_secret_key}"
+        encoded = base64.b64encode(credentials.encode()).decode()
+        return f"Basic {encoded}"
+
+    async def get_tokens(self, code: str) -> dict[str, Any]:
+        if not settings.token_debug_mode:
+            async with aiohttp.ClientSession() as session:
+                headers = {
+                    "Content-type": "application/x-www-form-urlencoded",
+                    "Authorization": self._get_authorization_headers()
+                }
+                params = {
+                    "grant_type": "authorization_code",
+                    "code": code,
+                }
+                async with session.post(settings.yandex_token_url, params=params, headers=headers) as response:
+                    return await response.json()
+        return {
+            "access_token": settings.yandex_debug_token,
+            "refresh_token": settings.yandex_debug_token
+        }
+
+    async def get_user_info(self, access_token: str) -> UserCreate:
+        async with aiohttp.ClientSession() as session:
+            params = {
+                "format": "json"
+            }
+            headers = {
+                "Authorization": access_token
+            }
+            async with session.get(settings.yandex_user_info_url, params=params, headers=headers) as response:
+                user_info = await response.json()
+                return UserCreate(
+                    login=user_info["login"],
+                    first_name=user_info["first_name"],
+                    last_name=user_info["last_name"],
+                    auth_provider="yandex",
+                )
