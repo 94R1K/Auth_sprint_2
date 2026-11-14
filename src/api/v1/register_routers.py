@@ -1,5 +1,3 @@
-from fastapi import FastAPI
-
 from api.v1.routers import (
     auth_router,
     healthcheck_router,
@@ -7,6 +5,7 @@ from api.v1.routers import (
     roles_router,
     users_router,
 )
+from fastapi import FastAPI
 
 
 def register_routers(app: FastAPI) -> bool:
@@ -15,5 +14,5 @@ def register_routers(app: FastAPI) -> bool:
     app.include_router(roles_router)
     app.include_router(permission_router)
     app.include_router(users_router)
-    
+
     return True

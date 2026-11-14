@@ -2,16 +2,16 @@ from __future__ import annotations
 
 import logging
 
+from models.permission import Permission
+from models.role import Role
+from models.role_permission import RolePermission
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.permission import Permission
-from models.role import Role
-from models.role_permission import RolePermission
-
 from .fixtures.permissions import PERMISSIONS_FIXTURE
 from .fixtures.roles import ROLES_FIXTURE
+
 
 logger = logging.getLogger(__name__)
 

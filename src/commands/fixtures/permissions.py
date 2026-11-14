@@ -1,5 +1,6 @@
 from core.permissions import PermissionCode
 
+
 # code -> description
 PERMISSIONS_FIXTURE: dict[PermissionCode, str] = {
     # movies

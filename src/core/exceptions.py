@@ -38,8 +38,8 @@ class InvalidRefreshTokenError(AuthError):
     """Недействительный или просроченный токен обновления."""
 
 
-class LoginRateLimitExceeded(DomainError):
-    """Исключение при превышении лимита попыток входа."""
+class RateLimitExceeded(DomainError):
+    """Исключение при превышении лимита запросов."""
     def __init__(self, retry_after: int) -> None:
         """Инициализировать исключение с временем ожидания повторной попытки.
 
@@ -48,5 +48,5 @@ class LoginRateLimitExceeded(DomainError):
         """
         self.retry_after = max(1, retry_after)
         super().__init__(
-            "Слишком много попыток входа. Повторите позже.",
+            "Слишком много запросов. Повторите позже.",
         )

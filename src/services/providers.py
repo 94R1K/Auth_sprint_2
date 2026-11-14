@@ -1,6 +1,7 @@
 from core.exceptions import InvalidCredentialsError
 from core.services import OAuthProviderABC
 from schemas import UserCreate
+
 from services.token import YandexTokenService
 
 
@@ -12,7 +13,7 @@ class YandexOAuthProvider(OAuthProviderABC):
         self._token_url = token_url
         self._user_info_url = user_info_url
         self._oauth_token_service = YandexTokenService()
-    
+
     async def get_user_info(self, code) -> UserCreate:
         tokens = await self._oauth_token_service.get_tokens(code)
         if tokens.get("erros"):

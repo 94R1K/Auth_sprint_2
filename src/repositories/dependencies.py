@@ -1,11 +1,13 @@
 from typing import TYPE_CHECKING
 
 from db.dependencies import PostgresSession
+
 from repositories import (
     PermissionRepository,
     RoleRepository,
     UserRepository,
 )
+
 
 if TYPE_CHECKING:
     from core.repositories import (

@@ -2,15 +2,16 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
+from db.postgres import Base
 from sqlalchemy import Boolean, DateTime, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from db.postgres import Base
+from .role_permission import RolePermission
+
 
 if TYPE_CHECKING:
     from .permission import Permission
-    from .role_permission import RolePermission
     from .user_role import UserRole
 
 
@@ -52,7 +53,7 @@ class Role(Base):
     )
 
     permissions: Mapped[list[Permission]] = relationship(
-        secondary="role_permissions",
+        secondary=RolePermission.__table__,
         back_populates="roles",
         lazy="selectin",
     )

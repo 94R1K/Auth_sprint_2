@@ -5,6 +5,7 @@ import pytest
 
 from tests.core.config import settings
 
+
 AUTH_URL = f"{settings.service_url}/api/v1/auth"
 
 

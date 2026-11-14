@@ -2,13 +2,16 @@ import asyncio
 import logging
 from typing import Literal
 
-from fastapi import APIRouter, Response, status
+from api.dependencies import require_endpoint_ip_rate_limit
+from db.dependencies import PostgresSession, RedisClient
+from fastapi import APIRouter, Depends, Response, status
 from pydantic import BaseModel
 from redis.exceptions import RedisError
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
-from db.dependencies import PostgresSession, RedisClient
+from .rate_limits import HEALTHCHECK_ENDPOINT_IP_LIMIT
+
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +20,14 @@ HEALTHCHECK_TIMEOUT = 2.0
 healthcheck_router = APIRouter(
     prefix="/api/v1/health",
     tags=["healthcheck"],
+    dependencies=[
+        Depends(
+            require_endpoint_ip_rate_limit(
+                endpoint_limit=HEALTHCHECK_ENDPOINT_IP_LIMIT.limit,
+                endpoint_window=HEALTHCHECK_ENDPOINT_IP_LIMIT.window,
+            )
+        ),
+    ],
 )
 
 
@@ -51,7 +62,7 @@ async def health(
             session.execute(text("SELECT 1")),
             timeout=HEALTHCHECK_TIMEOUT,
         )
-    except (SQLAlchemyError, OSError, TimeoutError):
+    except SQLAlchemyError, OSError, TimeoutError:
         logger.exception("Healthcheck: PostgreSQL is unavailable")
         database_status = "unavailable"
 
@@ -60,7 +71,7 @@ async def health(
             redis.ping(),
             timeout=HEALTHCHECK_TIMEOUT,
         )
-    except (RedisError, OSError, TimeoutError):
+    except RedisError, OSError, TimeoutError:
         logger.exception("Healthcheck: Redis is unavailable")
         redis_status = "unavailable"
 

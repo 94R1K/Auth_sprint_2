@@ -1,5 +1,6 @@
 from collections.abc import AsyncIterator
 
+from core.config import settings
 from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -7,8 +8,6 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import DeclarativeBase
-
-from core.config import settings
 
 
 class Base(DeclarativeBase):

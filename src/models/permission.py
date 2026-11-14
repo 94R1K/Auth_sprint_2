@@ -1,15 +1,16 @@
 import uuid
 from typing import TYPE_CHECKING
 
+from db.postgres import Base
 from sqlalchemy import String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from db.postgres import Base
+from .role_permission import RolePermission
+
 
 if TYPE_CHECKING:
     from .role import Role
-    from .role_permission import RolePermission
 
 
 class Permission(Base):
@@ -31,7 +32,7 @@ class Permission(Base):
         passive_deletes=True,
     )
     roles: Mapped[list[Role]] = relationship(
-        secondary="role_permissions",
+        secondary=RolePermission.__table__,
         back_populates="permissions",
         lazy="selectin",
     )

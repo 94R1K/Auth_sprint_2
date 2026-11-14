@@ -1,8 +1,9 @@
-from .auth import auth_router
-from .healthcheck import healthcheck_router
-from .permissions import permission_router
-from .roles import roles_router
-from .users import users_router
+from .auth.router import auth_router
+from .healthcheck.router import healthcheck_router
+from .permissions.router import permission_router
+from .roles.router import roles_router
+from .users.router import users_router
+
 
 __all__ = (
     "auth_router",

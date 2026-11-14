@@ -1,9 +1,9 @@
 import asyncio
 
 import typer
-
 from commands import CreateService, LoadService
 from db.postgres import async_session
+
 
 cli_app = typer.Typer(help="CLI сервиса авторизации")
 

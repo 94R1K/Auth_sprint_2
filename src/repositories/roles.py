@@ -1,14 +1,13 @@
 from uuid import UUID
 
-from sqlalchemy import delete, select
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from core.dto import RolesServiceParams
 from core.exceptions import ConflictError, NotFoundError
 from core.repositories import RoleRepositoryABC
 from models import Permission, Role, RolePermission, User, UserRole
 from schemas import RoleCreate, RoleRead, RoleUpdate
+from sqlalchemy import delete, select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class RoleRepository(RoleRepositoryABC):
@@ -34,11 +33,10 @@ class RoleRepository(RoleRepositoryABC):
         """Получить роль по идентификатору"""
         role = await self._session.get(Role, role_id)
         return RoleRead.model_validate(role) if role else None
-    
+
     async def get_role_by_name(self, role_name: str) -> RoleRead:
         query = select(Role).where(Role.name==role_name)
-        role = await self._session.scalar(query)
-        return role
+        return await self._session.scalar(query)
 
     async def create_role(self, role: RoleCreate) -> RoleRead:
         """Создать роль"""
@@ -53,13 +51,13 @@ class RoleRepository(RoleRepositoryABC):
                 raise ConflictError(
                     f"Role with name '{role.name}' already exists"
                 ) from e
-        print(created_role)
+
         return RoleRead(
             id=created_role.id,
             name=created_role.name,
             created_at=created_role.created_at,
             is_system=created_role.is_system,
-            permissions=[],   
+            permissions=[],
         )
 
     async def update_role_by_id(self, role_id: UUID, role_to_update: RoleUpdate) -> RoleRead:
@@ -67,7 +65,7 @@ class RoleRepository(RoleRepositoryABC):
         role = await self._session.get(Role, role_id)
         if role is None:
             return None
-        
+
         for field, value in role_to_update.model_dump(exclude_unset=True).items():
             setattr(role, field, value)
         try:
@@ -80,7 +78,7 @@ class RoleRepository(RoleRepositoryABC):
                     f"Role with name '{role_to_update.name}' already exists"
                 ) from e
             raise
-        
+
         return RoleRead.model_validate(role)
 
     async def delete_role_by_id(self, role_id: UUID) -> bool:
@@ -92,7 +90,7 @@ class RoleRepository(RoleRepositoryABC):
         await self._session.flush()
         await self._session.commit()
         return True
-    
+
     async def add_permissions_to_role(
         self, role_id: UUID, permission_codes: list[str]
     ) -> RoleRead:
@@ -191,7 +189,7 @@ class RoleRepository(RoleRepositoryABC):
         )
         result = await self._session.execute(stmt)
         link = result.scalar_one_or_none()
-        
+
         if not link:
             raise NotFoundError(f"Role {role_id} is not assigned to user {user_id}")
 

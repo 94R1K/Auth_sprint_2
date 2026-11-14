@@ -5,11 +5,11 @@ from uuid import UUID, uuid4
 
 import aiohttp
 import jwt
-
 from core.config import settings
 from core.dto import AccessTokenClaims, RefreshTokenClaims, TokenPair
 from core.exceptions import InvalidRefreshTokenError
 from schemas import UserCreate
+
 
 if TYPE_CHECKING:
     from core.clients import CacheClientABC

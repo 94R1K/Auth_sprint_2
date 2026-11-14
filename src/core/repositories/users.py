@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 from uuid import UUID
 
+
 if TYPE_CHECKING:
     from core.dto import LimitOffsetParams
     from models import User
@@ -12,7 +13,7 @@ class UserRepositoryABC(ABC):
     @abstractmethod
     async def create_user(self, user: UserCreate) -> UserInDB:
         """Создать нового пользователя."""
-    
+
     @abstractmethod
     async def update_password_hash(
         self,
