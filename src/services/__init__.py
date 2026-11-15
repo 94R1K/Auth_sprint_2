@@ -1,17 +1,18 @@
 from .dependencies import (
-    get_auth_service,
-    get_oauth_service,
-    get_permission_service,
-    get_role_service,
-    get_token_service,
-    get_user_service,
+    AuthServiceDependency,
+    OAuthServiceDependency,
+    PermissionsServiceDependency,
+    RoleServiceDependency,
+    TokenServiceDependency,
+    UserServiceDependency,
 )
 
+
 __all__ = (
-    "get_auth_service",
-    "get_oauth_service",
-    "get_permission_service",
-    "get_role_service",
-    "get_token_service",
-    "get_user_service",
+    "AuthServiceDependency",
+    "OAuthServiceDependency",
+    "PermissionsServiceDependency",
+    "RoleServiceDependency",
+    "TokenServiceDependency",
+    "UserServiceDependency",
 )

@@ -5,6 +5,7 @@ from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
 
+
 BASE_DIR = Path(__file__).resolve().parents[2]
 
 
@@ -17,11 +18,14 @@ class Settings(BaseSettings):
 
     jwt_private_key_path: Path
     jwt_public_key_path: Path
+    rate_limit_secret: SecretStr
 
     # Ограничение частоты попыток входа
-    login_rate_limit_account: int = Field(default=15, ge=1)
-    login_rate_limit_ip: int = Field(default=30, ge=1)
-    login_rate_limit_window_seconds: int = Field(default=600, ge=1)
+    ip_rate_limit: int = Field(default=15, ge=1)
+    ip_rate_limit_window: int = Field(default=30, ge=1)
+
+    user_rate_limit: int = Field(default=15, ge=1)
+    user_rate_limit_window: int = Field(default=600, ge=1)
 
     # SQLAlchemy
     sqlalchemy_log_level: Literal["INFO", "WARNING"] = "WARNING"
@@ -52,7 +56,6 @@ class Settings(BaseSettings):
 
     superuser_login: str
     superuser_password: str
-
 
     yandex_secret_key: str | None = None
     yandex_client_id: str | None = None

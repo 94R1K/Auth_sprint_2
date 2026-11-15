@@ -7,6 +7,7 @@ from core.repositories import PermissionRepositoryABC
 from core.services import PermissionsServiceABC
 from schemas import PermissionRead
 
+
 if TYPE_CHECKING:
     from db.cache import CacheStorage
 

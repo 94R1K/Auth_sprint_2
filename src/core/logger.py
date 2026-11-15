@@ -1,5 +1,6 @@
 from .config import settings
 
+
 LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 LOGGING = {

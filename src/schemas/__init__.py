@@ -4,6 +4,7 @@ from .permissions import PermissionRead
 from .roles import RoleCreate, RolePermissionsAssign, RoleRead, RoleUpdate
 from .users import UserCreate, UserInDB, UserLogin, UserRead, UserUpdate
 
+
 __all__ = (
     "LoginHistoryRead",
     "PermissionRead",

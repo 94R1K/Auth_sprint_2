@@ -7,6 +7,7 @@ from core.repositories import RoleRepositoryABC
 from core.services import RolesServiceABC
 from schemas import RoleCreate, RoleRead, RoleUpdate
 
+
 if TYPE_CHECKING:
     from db.cache import CacheStorage
 
@@ -38,7 +39,7 @@ class RolesServices(RolesServiceABC):
         existing = await self._db.get_role_by_name(role.name)
         if existing and existing.id != role_id:
             raise ConflictError(f"Роль с именем {role.name} уже существует")
-        
+
         existing = await self._db.get_role_by_id(role_id)
         if not existing:
             raise NotFoundError(f"Роли с id {role_id} не существует")
@@ -72,6 +73,6 @@ class RolesServices(RolesServiceABC):
 
     async def remove_role_from_user(self, role_id: UUID, user_id: UUID) -> None:
         await self._db.remove_role_from_user(role_id, user_id)
-    
+
     async def get_roles_by_user_id(self, user_id: UUID) -> list[RoleRead]:
         return await self._db.get_roles_by_user_id(user_id)

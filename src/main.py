@@ -3,9 +3,7 @@ from contextlib import asynccontextmanager
 from logging import config as logging_config
 from textwrap import dedent
 
-from fastapi import FastAPI
-from redis.asyncio import Redis
-
+from api.dependencies import require_global_user_rate_limit
 from api.exception_handlers import register_exception_handlers
 from api.middlewares import register_middlewares
 from api.tracer import configure_tracer
@@ -13,7 +11,12 @@ from api.v1.register_routers import register_routers
 from clients import RedisCacheClient
 from core.config import settings
 from core.logger import LOGGING
+from core.security import RateLimiter
 from db.postgres import engine
+from fastapi import FastAPI
+from fastapi.params import Depends
+from redis.asyncio import Redis
+
 
 logging_config.dictConfig(LOGGING)
 
@@ -25,7 +28,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         decode_responses=True,
     )
     app.state.redis = redis
-    app.state.redis_cache_client = RedisCacheClient(redis)
+
+    cache_client = RedisCacheClient(redis)
+
+    app.state.redis_cache_client = cache_client
+    app.state.rate_limiter = RateLimiter(
+        cache_client=cache_client,
+    )
 
     try:
         await redis.ping()
@@ -72,6 +81,14 @@ def create_fastapi_app() -> FastAPI:
         docs_url="/api/openapi",
         openapi_url="/api/openapi.json",
         lifespan=lifespan,
+        dependencies=[
+            Depends(
+                require_global_user_rate_limit(
+                    user_limit=settings.user_rate_limit,
+                    user_window=settings.user_rate_limit_window,
+                )
+            )
+        ],
     )
 
     register_middlewares(app)

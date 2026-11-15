@@ -1,16 +1,16 @@
 """create auth models
 
 Revision ID: 66c93abf0f6c
-Revises: 
+Revises:
 Create Date: 2026-10-20 23:51:10.877791
 
 """
 from collections.abc import Sequence
 
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
-from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = '66c93abf0f6c'

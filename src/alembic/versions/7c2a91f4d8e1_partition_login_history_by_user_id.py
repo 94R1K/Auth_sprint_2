@@ -1,19 +1,18 @@
 """Партиционирование истории входов по user_id.
 
 Revision ID: 7c2a91f4d8e1
-Revises: 2880610b6a03
+Revises: 2e11c1086372
 Create Date: 2026-11-08
 """
 from collections.abc import Sequence
 
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
-
 from alembic import op
+from sqlalchemy.dialects import postgresql
 
 
 revision: str = "7c2a91f4d8e1"
-down_revision: str | Sequence[str] | None = "2880610b6a03"
+down_revision: str | Sequence[str] | None = "2e11c1086372"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

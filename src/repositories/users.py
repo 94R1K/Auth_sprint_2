@@ -1,16 +1,16 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import select, update
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from core.dto import LimitOffsetParams
 from core.exceptions import ConflictError, NotFoundError
 from core.repositories import UserRepositoryABC
 from core.security import hash_password, verify_password_and_update
 from models import LoginHistory, User
 from schemas import LoginHistoryRead, UserInDB, UserRead, UserUpdate
+from sqlalchemy import select, update
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
+
 
 if TYPE_CHECKING:
     from schemas import UserCreate
@@ -38,7 +38,7 @@ class UserRepository(UserRepositoryABC):
             ) from exc
 
         return UserInDB.model_validate(db_user)
-    
+
     async def update_password_hash(
         self,
         user_id: UUID,
@@ -49,25 +49,25 @@ class UserRepository(UserRepositoryABC):
             .where(User.id == user_id)
             .values(password=password_hash)
         )
-    
+
         await self._session.execute(stmt)
         await self._session.commit()
 
     async def get_user_by_id(self, user_id: UUID) -> User:
         user: User | None = await self._session.get(User, user_id)
-    
+
         if not user:
             raise NotFoundError("Пользователь не найден")
-    
+
         return user
 
     async def get_user_by_login(self, login: str) -> User:
         stmt = select(User).where(User.login == login)
         user: User | None = await self._session.scalar(stmt)
-    
+
         if not user:
             raise NotFoundError("Пользователь не найден")
-    
+
         return user
 
     async def update_me(
@@ -87,7 +87,7 @@ class UserRepository(UserRepositoryABC):
                 existing = await self._session.scalar(query)
                 if existing and existing.id != user_id:
                     raise ConflictError("Введенный логин уже занят")
-                
+
                 user.login = new_user_data.login
 
             if new_user_data.password is not None:
@@ -126,7 +126,7 @@ class UserRepository(UserRepositoryABC):
         query = select(LoginHistory).where(LoginHistory.user_id == user_id)
         if params.limit is not None and params.limit is not None:
             query = query.limit(params.limit).offset(params.offset)
-        
+
         query = query.order_by(LoginHistory.login_at, LoginHistory.id)
 
         login_history_list = await self._session.execute(query)

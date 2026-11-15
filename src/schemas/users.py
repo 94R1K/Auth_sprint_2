@@ -22,7 +22,7 @@ class UserCreate(BaseModel):
     )
     first_name: str = Field(min_length=1, max_length=50, description="Имя")
     last_name: str = Field(min_length=1, max_length=50, description="Фамилия")
-    auth_provider: str = Field(
+    auth_provider: str | None = Field(
         default=None, min_length=3, max_length=256, description=""
     )
 
@@ -40,7 +40,7 @@ class UserCreate(BaseModel):
 
 class UserInDB(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: UUID
     login: str
     first_name: str
@@ -71,7 +71,7 @@ class UserUpdate(BaseModel):
 
 class UserRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: UUID
     login: str
     first_name: str

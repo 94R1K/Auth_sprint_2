@@ -3,6 +3,7 @@ from functools import partial
 from pwdlib import PasswordHash
 from starlette.concurrency import run_in_threadpool
 
+
 password_hasher = PasswordHash.recommended()
 
 

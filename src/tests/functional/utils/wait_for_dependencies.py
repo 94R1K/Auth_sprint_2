@@ -8,6 +8,7 @@ from httpx import AsyncClient, HTTPError
 from redis.asyncio import Redis
 from redis.exceptions import RedisError
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -15,8 +16,8 @@ async def _wait_for_ready(
     check: Callable[[], Awaitable[bool]],
     service_name: str,
     exceptions: tuple[type[Exception], ...],
-    timeout: float = 60,
-    interval: float = 1,
+    timeout: float = 60.0,
+    interval: float = 1.0,
 ) -> None:
     deadline = monotonic() + timeout
     last_exception: Exception | None = None
@@ -88,8 +89,8 @@ async def wait_for_redis_ready(
 async def wait_for_api_ready(
     session: AsyncClient,
     url: str,
-    timeout: float = 60,
-    interval: float = 1,
+    timeout: float = 60.0,
+    interval: float = 1.0,
 ) -> None:
     async def check() -> bool:
         response = await session.get(url)

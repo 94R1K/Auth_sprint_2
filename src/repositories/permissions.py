@@ -1,13 +1,12 @@
 from uuid import UUID
 
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-
 from core.dto import PermissionsServiceParams
 from core.repositories import PermissionRepositoryABC
 from models import Permission, Role, User, UserRole
 from schemas import PermissionRead
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 
 class PermissionRepository(PermissionRepositoryABC):

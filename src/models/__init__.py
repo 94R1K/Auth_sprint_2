@@ -5,6 +5,7 @@ from .role_permission import RolePermission
 from .user import User
 from .user_role import UserRole
 
+
 __all__ = (
     "LoginHistory",
     "Permission",

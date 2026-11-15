@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar
 
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
+
 if TYPE_CHECKING:
     from core.clients import CacheClientABC
 

@@ -17,6 +17,7 @@ from .utils.wait_for_dependencies import (
     wait_for_redis_ready,
 )
 
+
 SRC_DIR = Path(__file__).resolve().parent.parent.parent
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
