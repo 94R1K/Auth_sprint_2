@@ -16,8 +16,6 @@ if TYPE_CHECKING:
 
 
 class TokenService:
-    JWT_ALGORITHM = "RS256"
-
     USER_SESSIONS_PREFIX = "auth:user:{user_id}:session:"
     SESSION_KEY = "auth:user:{user_id}:session:{session_id}"
 
@@ -58,7 +56,7 @@ class TokenService:
         return jwt.encode(
             claims.model_dump(mode="json"),
             self._jwt_private_key,
-            algorithm=self.JWT_ALGORITHM,
+            algorithm=settings.jwt_algorithm,
         )
 
     def decode_access_token(self, token: str) -> AccessTokenClaims:
@@ -66,7 +64,7 @@ class TokenService:
         payload = jwt.decode(
             token,
             self._jwt_public_key,
-            algorithms=[self.JWT_ALGORITHM],
+            algorithms=[settings.jwt_algorithm],
         )
         return AccessTokenClaims.model_validate(payload)
 
@@ -75,7 +73,7 @@ class TokenService:
         payload = jwt.decode(
             token,
             self._jwt_public_key,
-            algorithms=[self.JWT_ALGORITHM],
+            algorithms=[settings.jwt_algorithm],
         )
         return RefreshTokenClaims.model_validate(payload)
 

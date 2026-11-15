@@ -16,6 +16,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    jwt_algorithm: Literal["RS256"] = "RS256"
     jwt_private_key_path: Path
     jwt_public_key_path: Path
     rate_limit_secret: SecretStr
