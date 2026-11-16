@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from core.dto import TokenPair
-    from schemas import UserCreate, UserInDB, UserLogin
+    from schemas import LoginResponse, UserCreate, UserInDB, UserLogin
 
 
 class AuthServiceABC(ABC):
@@ -19,8 +19,8 @@ class AuthServiceABC(ABC):
         user_data: UserLogin,
         ip_address: str | None = None,
         user_agent: str | None = None,
-    ) -> TokenPair:
-        """Аутентификация пользователя и выдача пары токенов."""
+    ) -> LoginResponse:
+        """Аутентификация пользователя и выдача пары токенов + данные пользователя."""
 
     @abstractmethod
     async def refresh_tokens(
@@ -34,7 +34,9 @@ class AuthServiceABC(ABC):
         """Выход из текущей сессии."""
 
     @abstractmethod
-    async def logout_all_except_current(self, user_id: str, current_session_id: str) -> None:
+    async def logout_all_except_current(
+        self, user_id: str, current_session_id: str
+    ) -> None:
         """Завершает все активные сессии, кроме текущей."""
 
     @abstractmethod

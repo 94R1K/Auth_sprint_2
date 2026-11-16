@@ -12,7 +12,7 @@ from api.dependencies import (
 from core.dto import TokenPair
 from fastapi import APIRouter, Depends, Query, Response, status
 from fastapi.responses import JSONResponse
-from schemas import TokenRefreshRequest, UserCreate, UserInDB, UserLogin
+from schemas import LoginResponse, TokenRefreshRequest, UserCreate, UserInDB, UserLogin
 from services import AuthServiceDependency, OAuthServiceDependency
 
 from .rate_limits import (
@@ -57,7 +57,7 @@ async def create_user(
     "/login",
     summary="Вход пользователя",
     description="Проверка учетных данных, фиксация сессии и выдача JWT-токенов.",
-    response_model=TokenPair,
+    response_model=LoginResponse,
     dependencies=[
         Depends(
             require_login_rate_limit(
@@ -70,7 +70,7 @@ async def create_user(
                 login_and_ip_limit=LOGIN_IP_LIMIT.limit,
                 login_and_ip_window=LOGIN_IP_LIMIT.window,
             ),
-        )
+        ),
     ],
 )
 async def login_user(
@@ -78,7 +78,7 @@ async def login_user(
     user_agent: UserAgentDependency,
     user_data: UserLogin,
     auth_service: AuthServiceDependency,
-) -> TokenPair:
+) -> LoginResponse:
     return await auth_service.login(
         user_data=user_data,
         ip_address=ip_address,
