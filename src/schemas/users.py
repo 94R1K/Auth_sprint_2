@@ -38,6 +38,7 @@ class UserCreate(BaseModel):
                 )
         return data
 
+
 class UserInDB(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -78,3 +79,12 @@ class UserRead(BaseModel):
     last_name: str
     is_superuser: bool
     is_active: bool
+
+
+class AuthenticatedUser(BaseModel):
+    id: UUID
+    login: str
+    first_name: str
+    last_name: str
+    is_active: bool
+    roles: list[str]

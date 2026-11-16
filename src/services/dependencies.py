@@ -47,6 +47,7 @@ def get_oauth_registry() -> dict[str, OAuthProviderABC]:
         ),
     }
 
+
 def get_token_service(
     cache_client: Annotated[
         CacheClientABC,
@@ -62,6 +63,12 @@ def get_token_service(
     )
 
 
+def get_role_service(
+    repo: Annotated[RoleRepositoryABC, Depends(get_role_repository)],
+    cache_storage: Annotated[CacheStorage, Depends(get_cache_storage)],
+) -> RolesServiceABC:
+    return RolesServices(db=repo, cache_storage=cache_storage)
+
 
 def get_oauth_service(
     code_provider: Annotated[str, Path()],
@@ -75,24 +82,21 @@ def get_oauth_service(
         raise NotFoundError(f"Провайдер '{code_provider}' не подключен") from None
     return OAuthService(db=repo, token_service=token_service, provider=provider)
 
+
 def get_auth_service(
     repo: Annotated[UserRepositoryABC, Depends(get_user_repository)],
     token_service: Annotated[TokenService, Depends(get_token_service)],
+    roles_service: Annotated[RolesServiceABC, Depends(get_role_service)],
 ) -> AuthServiceABC:
-    return AuthService(db=repo, token_service=token_service)
+    return AuthService(
+        db=repo, token_service=token_service, roles_service=roles_service
+    )
 
 
 def get_user_service(
     repo: Annotated[UserRepositoryABC, Depends(get_user_repository)],
 ) -> UserServiceABC:
     return UserService(db=repo)
-
-
-def get_role_service(
-    repo: Annotated[RoleRepositoryABC, Depends(get_role_repository)],
-    cache_storage: Annotated[CacheStorage, Depends(get_cache_storage)],
-) -> RolesServiceABC:
-    return RolesServices(db=repo, cache_storage=cache_storage)
 
 
 def get_permission_service(

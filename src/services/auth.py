@@ -10,8 +10,14 @@ from core.exceptions import (
 )
 from core.repositories import UserRepositoryABC
 from core.security import hash_password, verify_password_and_update
-from core.services import AuthServiceABC, OAuthProviderABC, OAuthServiceABC
+from core.services import (
+    AuthServiceABC,
+    OAuthProviderABC,
+    OAuthServiceABC,
+    RolesServiceABC,
+)
 from pydantic import ValidationError
+from schemas import AuthenticatedUser, LoginResponse
 
 
 if TYPE_CHECKING:
@@ -23,9 +29,15 @@ if TYPE_CHECKING:
 
 
 class AuthService(AuthServiceABC):
-    def __init__(self, db: UserRepositoryABC, token_service: TokenService):
+    def __init__(
+        self,
+        db: UserRepositoryABC,
+        token_service: TokenService,
+        roles_service: RolesServiceABC,
+    ):
         self._db = db
         self._token_service = token_service
+        self._roles_service = roles_service
 
     async def create_user(self, user: UserCreate) -> UserInDB:
         hashed_password = await hash_password(user.password)
@@ -39,11 +51,13 @@ class AuthService(AuthServiceABC):
         user_data: UserLogin,
         ip_address: str | None = None,
         user_agent: str | None = None,
-    ) -> TokenPair:
+    ) -> LoginResponse:
         try:
             user: User = await self._db.get_user_by_login(login=user_data.login)
         except NotFoundError:
-            raise InvalidCredentialsError("Неверный логин или пароль") from NotFoundError
+            raise InvalidCredentialsError(
+                "Неверный логин или пароль"
+            ) from NotFoundError
 
         if not user.is_active:
             raise UserInactiveError("Пользователь деактивирован")
@@ -70,7 +84,21 @@ class AuthService(AuthServiceABC):
             user_agent=user_agent,
         )
 
-        return await self._token_service.get_tokens(user_id=user.id)
+        tokens = await self._token_service.get_tokens(user_id=user.id)
+
+        roles = await self._roles_service.get_roles_by_user_id(user.id)
+
+        return LoginResponse(
+            **tokens.model_dump(),
+            user=AuthenticatedUser(
+                id=user.id,
+                login=user.login,
+                first_name=user.first_name,
+                last_name=user.last_name,
+                is_active=user.is_active,
+                roles=[role.name for role in roles],
+            ),
+        )
 
     async def refresh_tokens(self, refresh_token: str) -> TokenPair:
         error_message = "Недействительный или просроченный токен обновления"
@@ -78,7 +106,7 @@ class AuthService(AuthServiceABC):
             claims: RefreshTokenClaims = self._token_service.decode_refresh_token(
                 refresh_token
             )
-        except (jwt.PyJWTError, ValidationError):
+        except jwt.PyJWTError, ValidationError:
             raise InvalidRefreshTokenError(error_message) from None
         try:
             user_id: UUID = UUID(claims.user_id)
@@ -121,9 +149,7 @@ class OAuthService(OAuthServiceABC):
         try:
             return await self._db.get_user_by_login(login=user.login)
         except NotFoundError:
-            return await self._db.create_user(
-                user=user
-            )
+            return await self._db.create_user(user=user)
 
     def get_login_url(self) -> str:
         return self._provider.get_login_url()
