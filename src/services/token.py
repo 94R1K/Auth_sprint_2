@@ -81,6 +81,8 @@ class TokenService:
         self,
         user_id: str,
         session_id: str,
+        *,
+        expected_refresh_jti: str | None = None,
     ) -> TokenPair:
         now = int(time.time())
 
@@ -102,7 +104,19 @@ class TokenService:
         access_token = self._encode_token(access_claims)
         refresh_token = self._encode_token(refresh_claims)
 
-        await self.add_refresh_token(refresh_claims)
+        if expected_refresh_jti is None:
+            await self.add_refresh_token(refresh_claims)
+        else:
+            replaced = await self._cache_client.compare_and_set(
+                key=self._session_key(user_id, session_id),
+                expected=expected_refresh_jti,
+                value=refresh_claims.jti,
+                exat=refresh_claims.exp,
+            )
+            if not replaced:
+                raise InvalidRefreshTokenError(
+                    "Недействительный или просроченный токен обновления"
+                )
 
         return TokenPair(
             access_token=access_token,
@@ -174,9 +188,6 @@ class TokenService:
         if claims.type != "refresh":
             raise InvalidRefreshTokenError(error_message)
 
-        if not await self.is_refresh_token_active(claims):
-            raise InvalidRefreshTokenError(error_message)
-
         try:
             user_id = UUID(claims.user_id)
         except ValueError:
@@ -185,6 +196,7 @@ class TokenService:
         return await self._create_token_pair(
             user_id=str(user_id),
             session_id=claims.session_id,
+            expected_refresh_jti=claims.jti,
         )
 
     async def revoke_session(
