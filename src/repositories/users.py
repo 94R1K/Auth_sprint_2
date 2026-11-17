@@ -44,11 +44,7 @@ class UserRepository(UserRepositoryABC):
         user_id: UUID,
         password_hash: str,
     ) -> None:
-        stmt = (
-            update(User)
-            .where(User.id == user_id)
-            .values(password=password_hash)
-        )
+        stmt = update(User).where(User.id == user_id).values(password=password_hash)
 
         await self._session.execute(stmt)
         await self._session.commit()
@@ -61,11 +57,22 @@ class UserRepository(UserRepositoryABC):
 
         return user
 
-    async def get_oauth_user(self, login: str, provider: str, provider_uid: str) -> User:
+    async def get_user_by_login(self, login: str) -> User:
+        stmt = select(User).where(User.login == login)
+        user: User | None = await self._session.scalar(stmt)
+
+        if not user:
+            raise NotFoundError("Пользователь не найден")
+
+        return user
+
+    async def get_oauth_user(
+        self, login: str, provider: str, provider_uid: str
+    ) -> User:
         stmt = select(User).where(
             User.login == login,
             User.auth_provider == provider,
-            User.provider_uid == provider_uid
+            User.provider_uid == provider_uid,
         )
         user: User | None = await self._session.scalar(stmt)
 
@@ -80,7 +87,7 @@ class UserRepository(UserRepositoryABC):
             first_name=user.first_name,
             last_name=user.last_name,
             auth_provider=provider,
-            provider_uid=user.id
+            provider_uid=user.id,
         )
         self._session.add(db_user)
         try:
@@ -106,7 +113,7 @@ class UserRepository(UserRepositoryABC):
             if new_user_data.login is not None:
                 query = select(User).where(
                     User.login == new_user_data.login,
-                    User.id != user_id  # Исключаем самих себя
+                    User.id != user_id,  # Исключаем самих себя
                 )
                 existing = await self._session.scalar(query)
                 if existing and existing.id != user_id:
@@ -115,7 +122,9 @@ class UserRepository(UserRepositoryABC):
                 user.login = new_user_data.login
 
             if new_user_data.password is not None:
-                is_valid, _ = await verify_password_and_update(new_user_data.password.current_password, user.password)
+                is_valid, _ = await verify_password_and_update(
+                    new_user_data.password.current_password, user.password
+                )
                 if not is_valid:
                     raise ConflictError("Current password is incorrect")
                 user.password = await hash_password(new_user_data.password.new_password)
