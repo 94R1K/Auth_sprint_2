@@ -1,6 +1,7 @@
 from .auth import (
     CurrentTokenClaimsDependency,
     CurrentUserDependency,
+    OAuthStoreCacheDependency,
     OptionalCurrentUserDependency,
 )
 from .permissions import require_permission
@@ -22,6 +23,7 @@ __all__ = (
     "ClientIPDependency",
     "CurrentTokenClaimsDependency",
     "CurrentUserDependency",
+    "OAuthStoreCacheDependency",
     "OptionalCurrentUserDependency",
     "UserAgentDependency",
     "get_client_ip",

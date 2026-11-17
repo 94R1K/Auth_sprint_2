@@ -8,7 +8,7 @@ from api.exception_handlers import register_exception_handlers
 from api.middlewares import register_middlewares
 from api.tracer import configure_tracer
 from api.v1.register_routers import register_routers
-from clients import RedisCacheClient
+from clients import OAuthStateCacheClient, RedisCacheClient
 from core.config import settings
 from core.logger import LOGGING
 from core.security import RateLimiter
@@ -30,8 +30,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.redis = redis
 
     cache_client = RedisCacheClient(redis)
+    oauth_store_client = OAuthStateCacheClient(redis)
 
     app.state.redis_cache_client = cache_client
+    app.state.oauth_store_client = oauth_store_client
     app.state.rate_limiter = RateLimiter(
         cache_client=cache_client,
     )

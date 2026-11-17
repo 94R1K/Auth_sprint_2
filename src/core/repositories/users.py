@@ -27,7 +27,7 @@ class UserRepositoryABC(ABC):
         """Получение пользователя по идентификатору"""
 
     @abstractmethod
-    async def get_user_by_login(self, login: str) -> User:
+    async def get_oauth_user(self, login: str, provider: str, provider_uid: str) -> User:
         """Поиск пользователя по логину."""
 
     @abstractmethod

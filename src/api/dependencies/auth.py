@@ -2,6 +2,8 @@ from typing import Annotated
 from uuid import UUID
 
 import jwt
+from clients import get_oauth_store_client
+from core.clients import OAuthStateCacheClientABC
 from core.dto import AccessTokenClaims
 from core.exceptions import InvalidAccessTokenError
 from fastapi import Depends, Request
@@ -87,6 +89,10 @@ async def get_current_user(
 
     return user
 
+OAuthStoreCacheDependency = Annotated[
+    OAuthStateCacheClientABC,
+    Depends(get_oauth_store_client)
+]
 
 CurrentTokenClaimsDependency = Annotated[
     AccessTokenClaims,

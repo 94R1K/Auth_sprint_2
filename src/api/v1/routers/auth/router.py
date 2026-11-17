@@ -1,8 +1,10 @@
+import secrets
 from typing import Annotated
 
 from api.dependencies import (
     ClientIPDependency,
     CurrentTokenClaimsDependency,
+    OAuthStoreCacheDependency,
     UserAgentDependency,
     require_endpoint_ip_rate_limit,
     require_endpoint_user_rate_limit,
@@ -10,7 +12,7 @@ from api.dependencies import (
     require_login_rate_limit,
 )
 from core.dto import TokenPair
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from fastapi.responses import JSONResponse
 from schemas import LoginResponse, TokenRefreshRequest, UserCreate, UserInDB, UserLogin
 from services import AuthServiceDependency, OAuthServiceDependency
@@ -99,8 +101,11 @@ async def login_user(
 )
 async def oauth_get_code_url(
     oauth_service: OAuthServiceDependency,
+    oauth_store_client: OAuthStoreCacheDependency
 ):
-    return JSONResponse(content={"data": oauth_service.get_login_url()})
+    state = secrets.token_urlsafe(32)
+    await oauth_store_client.save(state=state, provider="yandex", ex=600)
+    return JSONResponse(content={"data": oauth_service.get_login_url(state)})
 
 
 @auth_router.get(
@@ -118,8 +123,12 @@ async def oauth_login(
     ip_address: ClientIPDependency,
     user_agent: UserAgentDependency,
     code: Annotated[str, Query()],
+    state: Annotated[str, Query()],
     oauth_service: OAuthServiceDependency,
+    oauth_store_client: OAuthStoreCacheDependency
 ) -> TokenPair:
+    if not await oauth_store_client.pop(state, "yandex"):
+        raise HTTPException(400, "Invalid or expired OAuth state")
     return await oauth_service.login(
         code=code, ip_address=ip_address, user_agent=user_agent
     )

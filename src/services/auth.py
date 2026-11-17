@@ -23,7 +23,7 @@ from schemas import AuthenticatedUser, LoginResponse
 if TYPE_CHECKING:
     from core.dto import RefreshTokenClaims, TokenPair
     from models import User
-    from schemas import UserCreate, UserInDB, UserLogin
+    from schemas import OAuthUserCreate, UserCreate, UserInDB, UserLogin
 
     from services.token import TokenService
 
@@ -145,18 +145,22 @@ class OAuthService(OAuthServiceABC):
         self._token_service = token_service
         self._provider = provider
 
-    async def _get_or_create_user(self, user: UserCreate) -> User:
+    async def _get_or_create_user(self, user: OAuthUserCreate) -> User:
         try:
-            return await self._db.get_user_by_login(login=user.login)
+            user.login = f"{user.login}_{self._provider.name}"
+            return await self._db.get_oauth_user(login=user.login, provider=self._provider.name, provider_uid=user.id)
         except NotFoundError:
-            return await self._db.create_user(user=user)
+            return await self._db.create_oauth_user(user=user, provider=self._provider.name)
 
-    def get_login_url(self) -> str:
-        return self._provider.get_login_url()
+    def get_login_url(self, state: str) -> str:
+        return self._provider.get_login_url(state)
 
     async def login(self, *, code: str, ip_address=None, user_agent=None) -> TokenPair:
         user_info = await self._provider.get_user_info(code)
         user = await self._get_or_create_user(user_info)
+
+        if not user.is_active:
+            raise UserInactiveError("Пользователь деактивирован")
 
         await self._db.create_login_history(
             user_id=user.id,

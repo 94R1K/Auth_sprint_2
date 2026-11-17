@@ -58,11 +58,11 @@ class Settings(BaseSettings):
     superuser_login: str
     superuser_password: str
 
-    yandex_secret_key: str | None = None
-    yandex_client_id: str | None = None
-    yandex_code_url: str | None = None
-    yandex_token_url: str | None = None
-    yandex_user_info_url: str | None = None
+    yandex_secret_key: str
+    yandex_client_id: str
+    yandex_code_url: str
+    yandex_token_url: str
+    yandex_user_info_url: str
     yandex_debug_token: str | None
 
     token_debug_mode: bool = False

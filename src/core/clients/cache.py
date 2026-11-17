@@ -42,3 +42,13 @@ class CacheClientABC(ABC):
         rules: Sequence[RateLimitRule],
     ) -> list[tuple[int, int]]:
         """Атомарно увеличивает счётчики и возвращает их значения и TTL."""
+
+
+class OAuthStateCacheClientABC(ABC):
+    @abstractmethod
+    async def save(self, state: str, provider: str, ex: int) -> None:
+        """Сохранить ключ state для последующей проверки"""
+
+    @abstractmethod
+    async def pop(self, state: str, provider: str) -> bool:
+        """Проверить наличие ключа state и удалить после проверки"""

@@ -1,7 +1,7 @@
 import logging
 from collections.abc import Sequence
 
-from core.clients import CacheClientABC
+from core.clients import CacheClientABC, OAuthStateCacheClientABC
 from core.dto.rate_limit import RateLimitRule
 from redis import RedisError
 from redis.asyncio import Redis
@@ -105,3 +105,14 @@ class RedisCacheClient(CacheClientABC):
         except RedisError:
             logger.exception("Redis counter update failed")
             raise
+
+
+class OAuthStateCacheClient(OAuthStateCacheClientABC):
+    def __init__(self, client: Redis):
+        self._client = client
+
+    async def save(self, state: str, provider: str, ex: int):
+        await self._client.set(f"oauth_state:{provider}:{state}", "1", ex=ex)
+
+    async def pop(self, state: str, provider: str) -> bool:
+        return await self._client.getdel(f"oauth_state:{provider}:{state}") is not None
