@@ -23,6 +23,12 @@ class CacheClientABC(ABC):
         """Положить значение по ключу."""
 
     @abstractmethod
+    async def compare_and_set(
+        self, key: str, expected: str, value: str, exat: int
+    ) -> bool:
+        """Заменить значение и срок действия, только если текущее значение совпадает."""
+
+    @abstractmethod
     async def delete(self, key: str) -> None:
         """Удалить ключ."""
 

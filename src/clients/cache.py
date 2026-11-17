@@ -11,6 +11,14 @@ logger = logging.getLogger(__name__)
 
 
 class RedisCacheClient(CacheClientABC):
+    _COMPARE_AND_SET_SCRIPT = """
+    if redis.call('GET', KEYS[1]) == ARGV[1] then
+        redis.call('SET', KEYS[1], ARGV[2], 'EXAT', ARGV[3])
+        return 1
+    end
+    return 0
+    """
+
     def __init__(self, client: Redis):
         self._client = client
 
@@ -36,6 +44,27 @@ class RedisCacheClient(CacheClientABC):
         except RedisError:
             logger.warning(
                 "Redis cache write failed. Cache key: %s",
+                key,
+                exc_info=True,
+            )
+            raise
+
+    async def compare_and_set(
+        self, key: str, expected: str, value: str, exat: int
+    ) -> bool:
+        try:
+            result = await self._client.eval(
+                self._COMPARE_AND_SET_SCRIPT,
+                1,
+                key,
+                expected,
+                value,
+                exat,
+            )
+            return bool(result)
+        except RedisError:
+            logger.warning(
+                "Redis cache compare-and-set failed. Cache key: %s",
                 key,
                 exc_info=True,
             )
