@@ -1,7 +1,6 @@
-from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class PasswordChange(BaseModel):
@@ -18,25 +17,26 @@ class UserCreate(BaseModel):
         ..., min_length=3, max_length=50, description="Логин пользователя"
     )
     password: str | None = Field(
-        default=None, min_length=8, max_length=128, description="Пароль пользователя"
+        ..., min_length=8, max_length=128, description="Пароль пользователя"
     )
     first_name: str = Field(min_length=1, max_length=50, description="Имя")
     last_name: str = Field(min_length=1, max_length=50, description="Фамилия")
-    auth_provider: str | None = Field(
-        default=None, min_length=3, max_length=256, description=""
-    )
 
-    @model_validator(mode="before")
-    @classmethod
-    def check_auth_fields(cls, data: Any) -> Any:
-        if isinstance(data, dict):
-            has_password = data.get("password") is not None
-            has_provider = data.get("auth_provider") is not None
-            if has_password == has_provider:
-                raise ValueError(
-                    "Должно быть передано ровно одно из полей: password или auth_provider"
-                )
-        return data
+
+class OAuthUserCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(
+        ..., max_length=255, description=""
+    )
+    auth_provider: str | None = Field(
+        ..., min_length=3, max_length=256, description=""
+    )
+    login: str = Field(
+        ..., min_length=3, max_length=50, description="Логин пользователя"
+    )
+    first_name: str = Field(min_length=1, max_length=50, description="Имя")
+    last_name: str = Field(min_length=1, max_length=50, description="Фамилия")
 
 
 class UserInDB(BaseModel):
@@ -46,6 +46,7 @@ class UserInDB(BaseModel):
     login: str
     first_name: str
     last_name: str
+    is_active: bool
 
 
 class UserLogin(BaseModel):

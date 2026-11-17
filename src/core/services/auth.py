@@ -46,9 +46,9 @@ class AuthServiceABC(ABC):
 
 class OAuthServiceABC(ABC):
     @abstractmethod
-    def get_login_url(self):
+    def get_login_url(self, state: str):
         """Получение ссылки для получения кода авторизации"""
 
     @abstractmethod
-    async def login(self, *, code: str, ip_address=None, user_agent=None) -> TokenPair:
+    async def login(self, code: str, ip_address=None, user_agent=None) -> TokenPair:
         """Вход в приложение через стороннюю авторизацию"""

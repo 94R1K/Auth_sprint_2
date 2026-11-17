@@ -8,7 +8,7 @@ import jwt
 from core.config import settings
 from core.dto import AccessTokenClaims, RefreshTokenClaims, TokenPair
 from core.exceptions import InvalidRefreshTokenError
-from schemas import UserCreate
+from schemas import OAuthUserCreate
 
 
 if TYPE_CHECKING:
@@ -231,36 +231,32 @@ class YandexTokenService:
         return f"Basic {encoded}"
 
     async def get_tokens(self, code: str) -> dict[str, Any]:
-        if not settings.token_debug_mode:
-            async with aiohttp.ClientSession() as session:
-                headers = {
-                    "Content-type": "application/x-www-form-urlencoded",
-                    "Authorization": self._get_authorization_headers()
-                }
-                params = {
-                    "grant_type": "authorization_code",
-                    "code": code,
-                }
-                async with session.post(settings.yandex_token_url, params=params, headers=headers) as response:
-                    return await response.json()
-        return {
-            "access_token": settings.yandex_debug_token,
-            "refresh_token": settings.yandex_debug_token
-        }
+        async with aiohttp.ClientSession() as session:
+            headers = {
+                "Content-type": "application/x-www-form-urlencoded",
+                "Authorization": self._get_authorization_headers()
+            }
+            data = {
+                "grant_type": "authorization_code",
+                "code": code,
+            }
+            async with session.post(settings.yandex_token_url, data=data, headers=headers) as response:
+                return await response.json()
 
-    async def get_user_info(self, access_token: str) -> UserCreate:
+    async def get_user_info(self, access_token: str) -> OAuthUserCreate:
         async with aiohttp.ClientSession() as session:
             params = {
                 "format": "json"
             }
             headers = {
-                "Authorization": access_token
+                "Authorization": f"OAuth {access_token}"
             }
             async with session.get(settings.yandex_user_info_url, params=params, headers=headers) as response:
                 user_info = await response.json()
-                return UserCreate(
+                return OAuthUserCreate(
                     login=user_info["login"],
                     first_name=user_info["first_name"],
                     last_name=user_info["last_name"],
+                    id=user_info["id"],
                     auth_provider="yandex",
                 )

@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from db.postgres import Base
-from sqlalchemy import Boolean, DateTime, String, func
+from sqlalchemy import Boolean, DateTime, String, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -54,6 +54,12 @@ class User(Base):
         nullable=True,
         default=None
     )
+    provider_uid: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+        default=None
+    )
+
     user_roles: Mapped[list[UserRole]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
@@ -62,6 +68,10 @@ class User(Base):
     login_history: Mapped[list[LoginHistory]] = relationship(
         back_populates="user",
         passive_deletes=True,
+    )
+
+    __table_args__ = (
+        UniqueConstraint("auth_provider", "provider_uid", name="uq_user_provider_uid"),
     )
 
     def __repr__(self) -> str:

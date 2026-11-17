@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 
 if TYPE_CHECKING:
-    from schemas import UserCreate
+    from schemas import OAuthUserCreate, UserCreate
 
 
 class UserRepository(UserRepositoryABC):
@@ -61,14 +61,38 @@ class UserRepository(UserRepositoryABC):
 
         return user
 
-    async def get_user_by_login(self, login: str) -> User:
-        stmt = select(User).where(User.login == login)
+    async def get_oauth_user(self, login: str, provider: str, provider_uid: str) -> User:
+        stmt = select(User).where(
+            User.login == login,
+            User.auth_provider == provider,
+            User.provider_uid == provider_uid
+        )
         user: User | None = await self._session.scalar(stmt)
 
         if not user:
             raise NotFoundError("Пользователь не найден")
 
         return user
+
+    async def create_oauth_user(self, user: OAuthUserCreate, provider: str) -> UserInDB:
+        db_user: User = User(
+            login=user.login,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            auth_provider=provider,
+            provider_uid=user.id
+        )
+        self._session.add(db_user)
+        try:
+            await self._session.commit()
+            await self._session.refresh(db_user)
+        except IntegrityError as exc:
+            await self._session.rollback()
+            raise ConflictError(
+                f"Пользователь с логином {user.login} уже существует"
+            ) from exc
+
+        return UserInDB.model_validate(db_user)
 
     async def update_me(
         self, user_id: UUID, new_user_data: UserUpdate
